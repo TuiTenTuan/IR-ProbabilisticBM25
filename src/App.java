@@ -21,7 +21,9 @@ public class App {
     private static String pathDocumentClear = "Output\\document-clear.txt";
 
     private static int topDocumentSuitable = 100; //1% doc
-    private static int maxLoop = 1000;
+    private static int k = 2;
+    private static double b = 0.75;
+
     public static void main(String[] args)
     {
         //read raw data
@@ -34,6 +36,14 @@ public class App {
 
         //clear Document
         List<Document> clearDocuments = Data.Instance().RemoveStopWordDocuments(rawDocuments, stopWords);
+
+        //ave Doc length
+        double aveDocLength = 0;
+        for (Document document : clearDocuments) 
+        {
+            aveDocLength += document.ContentLength();            
+        }
+        aveDocLength /= clearDocuments.size();
 
         //storage Document clear
         if(Data.Instance().WriteDocumentClearFile(clearDocuments, pathDocumentClear))
@@ -71,7 +81,7 @@ public class App {
 
         for (Document query : clearQuery) 
         {
-            List<Document> documentResult = IRFunction.Instance().Probabilistic(query.getContent(), clearDocuments, worlDocIndex, topDocumentSuitable, maxLoop);
+            List<Document> documentResult = IRFunction.Instance().Probabilistic(query.getContent(), clearDocuments, worlDocIndex, topDocumentSuitable, k, b, aveDocLength);
 
             HashSet<Integer> tempIndexDoc = new HashSet<Integer>();
 

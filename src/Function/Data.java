@@ -270,7 +270,7 @@ public class Data
                 List<Integer> indexs = new ArrayList<Integer>(queryIndex.get(i));
                 Collections.sort(indexs);
 
-                fw.write(i.toString());
+                fw.write(String.valueOf(i + 1));
                 fw.write(" - ");
 
                 for (Integer docIndex : indexs) 

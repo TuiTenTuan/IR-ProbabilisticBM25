@@ -34,6 +34,11 @@ public class Document implements Comparable<Document>
         this.rsv = rsv;
     }
 
+    public int ContentLength()
+    {
+        return this.content.split(" ").length;
+    }
+
     public Document() 
     {
         id = 0;

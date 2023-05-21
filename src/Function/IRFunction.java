@@ -50,85 +50,63 @@ public class IRFunction
         return result;
     }
 
-    public List<Document> Probabilistic (String query, List<Document> documents, Hashtable<String, HashSet<Integer>> wordIndexs, int topDocumentSuitable, int maxLoop)
+    public List<Document> Probabilistic (String query, List<Document> documents, Hashtable<String, HashSet<Integer>> wordIndexs, int topDocumentSuitable, int k, double b, double aveDocLength)
     {
         List<Document> result = new ArrayList<Document>();
 
-        List<Document> tempDocuments = new ArrayList<Document>(documents);
-
-        while(maxLoop > 0)
+        List<Document> tempDocuments = new ArrayList<Document>(documents);        
+       
+        for(int i = 0; i < tempDocuments.size(); i++)
         {
-            for(int i = 0; i < tempDocuments.size(); i++)
-            {
-                tempDocuments.get(i).setRSV(Ct(query, i, result, tempDocuments, wordIndexs)); //calculated ct
-            }
-        
-            // sort by RSV
-            Collections.sort(tempDocuments, Collections.reverseOrder()); 
+            tempDocuments.get(i).setRSV(OkapiBM25(query, i, tempDocuments, wordIndexs, k, b, aveDocLength)); //calculated RSV BM25
+        }
+    
+        // sort by RSV
+        Collections.sort(tempDocuments, Collections.reverseOrder()); 
 
-            List<Document> tempResult = new ArrayList<Document>(result);
-
-            result.clear();
-
-            //get top document
-            for(int i = 0; i < topDocumentSuitable; i++) 
-            {
-                result.add(tempDocuments.get(i));
-            }
-
-            maxLoop--;
-
-            //Check converging
-            for (Document document : tempResult) 
-            {
-                if(!result.contains(document))
-                {
-                    continue;
-                }
-            }
-
-            //Converging
-            return result;
+        //get top document
+        for(int i = 0; i < topDocumentSuitable; i++) 
+        {
+            result.add(tempDocuments.get(i));
         }
 
         return result;
     }
 
-    private double Ct(String query, int indexDoc, List<Document> documentSuitables, List<Document> documents, Hashtable<String, HashSet<Integer>> wordIndexs)
+    private double OkapiBM25(String query, int indexDoc, List<Document> documents, Hashtable<String, HashSet<Integer>> wordIndexs, int k, double b, double aveDocLength)
     {
         double result = 0;
 
-        String[] querySplits = query.split(" ");
+        Document document = documents.get(indexDoc);
 
-        Hashtable<String, HashSet<Integer>> suitableWordIndex = WorldIndex(documentSuitables);
+        double lengthComponent = (1 - b) + b * (document.ContentLength() / aveDocLength);
 
-        String document = documents.get(indexDoc).getContent();
+        String[] querySplits = query.split(" ");        
+
+        String[] docSlipts = document.getContent().split(" ");
 
         for (String word : querySplits) 
-        {   
-            if(document.contains(word))
+        {               
+            int tf = 0;
+
+            for (String wordDoc : docSlipts) 
             {
-                int docContainWord = wordIndexs.get(word) == null ? 0 : wordIndexs.get(word).size();
-
-                if(documentSuitables.size() == 0)
-                {                
-                    result += Math.log10((documents.size() - docContainWord + 0.5) / (docContainWord + 0.5));
-                }
-                else
+                if(word.equals(wordDoc))
                 {
-                    int suitableDocContainWord = suitableWordIndex.get(word).size();
+                    tf++;
+                }                
+            }
 
-                    double pi = (suitableDocContainWord + 0.5) / (documentSuitables.size() + 1);
-                    double ri = (docContainWord - suitableDocContainWord + 0.5) / (documents.size() - documentSuitables.size() + 1);
+            if(tf > 0)
+            {
+                double tf_ = tf / lengthComponent;
 
-                    double topOfFaction = pi * (1 - ri);
-                    double bottomOfFaction = ri * (1 - pi);
-
-                    result += Math.log10(topOfFaction / bottomOfFaction);
-                }
+                int docContainWord = wordIndexs.get(word).size();
+                    
+                result += Math.log10(documents.size() / docContainWord) * (((k + 1) * tf_) / (k + tf_));                     
             }    
         }
-        
+
         return result;
     }
 }
